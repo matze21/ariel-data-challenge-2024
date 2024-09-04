@@ -50,6 +50,13 @@ def get_cds(signal):
     cds = signal[:,1::2,:,:] - signal[:,::2,:,:]
     return cds
 
+def get_cds_origial(signal):
+    """
+    calcs difference in time becuase the detector is read twice, once in the beginning and once in the end of the measurement, the difference is what's measured
+    """
+    cds = signal[1::2,:,:] - signal[::2,:,:]
+    return cds
+
 def bin_obs(cds_signal,binning):
     cds_transposed = cds_signal.transpose(0,1,3,2)
     cds_binned = np.zeros((cds_transposed.shape[0], cds_transposed.shape[1]//binning, cds_transposed.shape[2], cds_transposed.shape[3]))
@@ -162,19 +169,12 @@ def calibrateData(planet_id,train_adc_info,axis_info,DO_MASK,DO_THE_NL_CORR,DO_D
     if TIME_BINNING:
         AIRS_cds_binned = bin_obs(AIRS_cds,binning=30)
         FGS1_cds_binned = bin_obs(FGS1_cds,binning=30*12)
-
-        AIRS_cln_binned = bin_obs(AIRS_CH0_clean,binning=30)
-        FGS1_cln_binned = bin_obs(FGS1_clean,binning=30*12)
     else:
         AIRS_cds = AIRS_cds.transpose(0,1,3,2) ## this is important to make it consistent for flat fielding, but you can always change it
         AIRS_cds_binned = AIRS_cds
         FGS1_cds = FGS1_cds.transpose(0,1,3,2)
         FGS1_cds_binned = FGS1_cds
-
-        AIRS_cln_binned = AIRS_CH0_clean.transpose(0,1,3,2)
-        FGS1_cln_binned = FGS1_clean.transpose(0,1,3,2)
-
-    del AIRS_cds, FGS1_cds, AIRS_CH0_clean,FGS1_clean
+    del AIRS_cds, FGS1_cds
 
     flat_airs = pd.read_parquet(os.path.join(path_folder,f'train/{planet_id}/AIRS-CH0_calibration/flat.parquet')).values.astype(np.float64).reshape((32, 356))[:, cut_inf:cut_sup]
     flat_fgs = pd.read_parquet(os.path.join(path_folder,f'train/{planet_id}/FGS1_calibration/flat.parquet')).values.astype(np.float64).reshape((32, 32))
@@ -183,13 +183,11 @@ def calibrateData(planet_id,train_adc_info,axis_info,DO_MASK,DO_THE_NL_CORR,DO_D
         AIRS_cds_binned[0] = corrected_AIRS_cds_binned
         corrected_FGS1_cds_binned = correct_flat_field(flat_fgs,dead_fgs1, FGS1_cds_binned[0])
         FGS1_cds_binned[0] = corrected_FGS1_cds_binned
-
-        corrected_AIRS_cln_binned = correct_flat_field(flat_airs,dead_airs, AIRS_cln_binned[0])
-        AIRS_cln_binned[0] = corrected_AIRS_cln_binned
-        corrected_FGS1_cln_binned = correct_flat_field(flat_fgs,dead_fgs1, FGS1_cln_binned[0])
-        FGS1_cln_binned[0] = corrected_FGS1_cln_binned
     else:
         pass
 
-    return AIRS_cds_binned, FGS1_cds_binned,AIRS_cln_binned,FGS1_cln_binned, airs_original, fgs_original
+    AIRS_cds_original = np.expand_dims(get_cds_origial(airs_original), axis=0).transpose(0,1,3,2)
+    FGS1_cds_original = np.expand_dims(get_cds_origial(fgs_original), axis=0).transpose(0,1,3,2)
+
+    return AIRS_cds_binned, FGS1_cds_binned,AIRS_cds_original, FGS1_cds_original
 
