@@ -99,7 +99,7 @@ def calibrateData(planet_id,train_adc_info,axis_info,DO_MASK,DO_THE_NL_CORR,DO_D
     dt_airs[1::2] += 0.1
     chopped_signal = signal[:, :, cut_inf:cut_sup]
 
-    airs_original = signal
+    airs_original = chopped_signal
     del signal, df
 
     # CLEANING THE DATA: AIRS
@@ -134,7 +134,7 @@ def calibrateData(planet_id,train_adc_info,axis_info,DO_MASK,DO_THE_NL_CORR,DO_D
     dt_fgs1 = np.ones(len(fgs_signal))*0.1  ## please refer to data documentation for more information
     dt_fgs1[1::2] += 0.1
     chopped_FGS1 = fgs_signal
-    fgs_original = fgs_signal
+    fgs_original = chopped_FGS1
     del fgs_signal, df
 
     # CLEANING THE DATA: FGS1
